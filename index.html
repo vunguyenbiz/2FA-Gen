@@ -80,7 +80,7 @@ input:focus{border-color:#ec4899;box-shadow:0 0 0 3px rgba(236,72,153,0.1)}
       </svg>
     </div>
     <h1>2FA Generator</h1>
-    <p class="by">by <span>Vũ Nguyễn</span></p>
+    <p class="by">by <a href="https://www.facebook.com/vunguyen.biz/" target="_blank" rel="noopener" style="color:#a855f7;font-style:italic;text-decoration:none;border-bottom:1px dashed #a855f7;padding-bottom:1px;transition:color 0.2s" onmouseover="this.style.color='#db2777';this.style.borderColor='#db2777'" onmouseout="this.style.color='#a855f7';this.style.borderColor='#a855f7'">Vũ Nguyễn</a></p>
     <p class="sub">Không lưu thông tin · Chỉ chạy trên RAM</p>
   </div>
 
@@ -131,7 +131,6 @@ input:focus{border-color:#ec4899;box-shadow:0 0 0 3px rgba(236,72,153,0.1)}
 
     <div class="btn-row">
       <button class="btn-copy-full" onclick="doCopy()">Copy mã</button>
-      <button class="btn-clear-clip" id="clearClipBtn" onclick="clearClipboard()" title="Xóa clipboard">🧹 Xóa clipboard</button>
     </div>
 
     <div class="next-wrap">
@@ -288,30 +287,6 @@ async function doCopyNext(){
   },1500);
 }
 
-async function clearClipboard(){
-  let ok=false;
-  // Method 1: Clipboard API (HTTPS / modern browser)
-  try{
-    await navigator.clipboard.writeText(' ');
-    ok=true;
-  }catch{}
-  // Method 2: execCommand fallback (file:// or older browser)
-  if(!ok){
-    try{
-      const ta=document.createElement('textarea');
-      ta.value=' ';
-      ta.style.cssText='position:fixed;top:0;left:0;opacity:0;pointer-events:none';
-      document.body.appendChild(ta);
-      ta.focus();ta.select();
-      ok=document.execCommand('copy');
-      document.body.removeChild(ta);
-    }catch{}
-  }
-  const btn=document.getElementById('clearClipBtn');
-  btn.textContent= ok ? '✓ Đã xóa!' : '⚠️ Không được phép';
-  btn.classList.add('done');
-  setTimeout(()=>{btn.textContent='🧹 Xóa clipboard';btn.classList.remove('done');},2000);
-}
 
 function clearAll(){
   document.getElementById('sk').value='';
