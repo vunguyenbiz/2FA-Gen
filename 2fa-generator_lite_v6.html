@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2FA Generator — Vũ Nguyễn</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100vh;background:#f1f5f9;display:flex;align-items:center;justify-content:center;padding:24px;font-family:'DM Sans',sans-serif;background-image:radial-gradient(ellipse 60% 40% at 20% 0%,rgba(148,163,184,0.15) 0%,transparent 60%),radial-gradient(ellipse 40% 30% at 80% 100%,rgba(168,85,247,0.05) 0%,transparent 60%)}
+.box{width:100%;max-width:420px;background:#ffffff;border:1px solid #e2e8f0;border-radius:20px;padding:36px 32px;box-shadow:0 12px 48px rgba(0,0,0,0.08)}
+.logo{text-align:center;margin-bottom:28px}
+.logo .icon{display:flex;align-items:center;justify-content:center;margin:0 auto 14px;width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#fce7f3,#ede9fe);border:1px solid #fbcfe8}
+.logo h1{font-family:'Space Mono',monospace;font-size:20px;letter-spacing:4px;color:#db2777;text-transform:uppercase}
+.logo .by{color:#374151;font-size:12px;margin-top:5px;letter-spacing:1px}
+.logo .by span{color:#a855f7;font-style:italic}
+.logo .sub{color:#374151;font-size:11px;margin-top:8px;letter-spacing:1px;font-family:'Space Mono',monospace}
+.session-bar{display:flex;align-items:center;justify-content:space-between;background:#fdf2f8;border:1px solid #fce7f3;border-radius:10px;padding:8px 14px;margin-bottom:20px}
+.session-left{display:flex;align-items:center;gap:8px}
+.session-label{font-family:'Space Mono',monospace;font-size:10px;color:#1f2937;letter-spacing:1px;text-transform:uppercase}
+.session-timer{font-family:'Space Mono',monospace;font-size:12px;color:#1f2937}
+.session-timer.warn{color:#f59e0b}
+.session-timer.crit{color:#ef4444;animation:blink 1s infinite}
+.btn-renew{background:#fff;border:1px solid #fce7f3;border-radius:7px;color:#a855f7;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:1px;padding:4px 10px;cursor:pointer;transition:all 0.2s;text-transform:uppercase;white-space:nowrap}
+.btn-renew:hover{border-color:#a855f7;background:#fdf4ff}
+.btn-renew.flash{border-color:#10b981;color:#10b981;background:#f0fdf4}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.4}}
+.label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#1f2937;margin-bottom:7px;font-family:'Space Mono',monospace}
+.input-row{display:flex;gap:8px;margin-bottom:6px}
+input{flex:1;background:#fdf2f8;border:1px solid #fce7f3;border-radius:10px;color:#1f2937;font-family:'Space Mono',monospace;font-size:13px;padding:11px 14px;outline:none;transition:border-color 0.2s}
+input:focus{border-color:#ec4899;box-shadow:0 0 0 3px rgba(236,72,153,0.1)}
+.btn-eye{background:#fdf2f8;border:1px solid #fce7f3;border-radius:10px;padding:0 12px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0}
+.btn-eye:hover{border-color:#ec4899;background:#fff}
+.btn-eye.active{border-color:#ec4899;background:#fff}
+.btn-clear{background:#fdf2f8;border:1px solid #fce7f3;border-radius:10px;color:#9ca3af;font-size:12px;padding:0 14px;cursor:pointer;font-family:'Space Mono',monospace;transition:all 0.2s;white-space:nowrap}
+.btn-clear:hover{border-color:#ef4444;color:#ef4444}
+.err{color:#ef4444;font-size:11px;font-family:'Space Mono',monospace;min-height:16px;margin-bottom:4px}
+.result{background:#fdf2f8;border:1px solid #fce7f3;border-radius:16px;padding:28px 24px 20px;text-align:center;margin-top:16px;display:none}
+.circle-wrap{position:relative;width:120px;height:120px;margin:0 auto 20px}
+.circle-wrap svg{transform:rotate(-90deg)}
+.ring-bg{stroke:#fce7f3;stroke-width:6;fill:none}
+.ring-fg{fill:none;stroke-width:6;stroke-linecap:round;stroke-dasharray:339.3;transition:stroke-dashoffset 1s linear,stroke 0.3s}
+.circle-inner{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.circle-sec{font-family:'Space Mono',monospace;font-size:22px;font-weight:700;color:#db2777;line-height:1}
+.circle-lbl{font-family:'Space Mono',monospace;font-size:9px;color:#1f2937;letter-spacing:1px;margin-top:3px}
+.code-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#1f2937;font-family:'Space Mono',monospace;margin-bottom:10px}
+.code-row{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:6px}
+.code{font-family:'Space Mono',monospace;font-size:40px;font-weight:700;letter-spacing:8px;color:#db2777;user-select:none;transition:color 0.15s;cursor:default}
+.code.low{color:#ef4444}
+.code.copied{color:#10b981}
+.copy-btn{background:#fff;border:1px solid #fce7f3;border-radius:9px;padding:8px 10px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.copy-btn:hover{border-color:#ec4899;background:#fdf2f8}
+.copy-btn.done{border-color:#10b981;background:#f0fdf4}
+.copy-btn svg{display:block;transition:all 0.2s}
+.copied-msg{font-size:11px;color:#10b981;font-family:'Space Mono',monospace;min-height:16px;margin-top:4px}
+.btn-copy-full{background:linear-gradient(135deg,#ec4899,#a855f7);border:none;border-radius:10px;color:#fff;font-family:'Space Mono',monospace;font-size:12px;letter-spacing:1px;padding:10px 28px;cursor:pointer;transition:opacity 0.2s;text-transform:uppercase;margin-top:8px}
+.btn-copy-full:hover{opacity:0.85}
+.btn-clear-clip{background:#fff;border:1px solid #fce7f3;border-radius:10px;color:#9ca3af;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:1px;padding:9px 16px;cursor:pointer;transition:all 0.2s;text-transform:uppercase;margin-top:8px;margin-left:8px}
+.btn-clear-clip:hover{border-color:#f59e0b;color:#f59e0b}
+.btn-clear-clip.done{border-color:#10b981;color:#10b981}
+.btn-row{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:0}
+.next-wrap{background:#fff;border:1px solid #fce7f3;border-radius:12px;padding:12px 16px;margin-top:18px;display:flex;align-items:center;justify-content:space-between}
+.next-left{text-align:left;flex:1}
+.next-lbl{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#1f2937;font-family:'Space Mono',monospace;margin-bottom:4px}
+.next-code{font-family:'Space Mono',monospace;font-size:20px;font-weight:700;letter-spacing:4px;color:#9ca3af}
+.next-info{font-size:10px;color:#1f2937;font-family:'Space Mono',monospace;margin-top:3px}
+.next-copy-btn{background:#fdf2f8;border:1px solid #fce7f3;border-radius:8px;padding:7px 9px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s}
+.next-copy-btn:hover{border-color:#ec4899;background:#fff}
+.next-copy-btn.done{border-color:#10b981;background:#f0fdf4}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="logo">
+    <div class="icon">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="5" y="11" width="14" height="10" rx="2"/>
+        <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+        <circle cx="12" cy="16" r="1" fill="#ec4899" stroke="none"/>
+      </svg>
+    </div>
+    <h1>2FA Generator</h1>
+    <p class="by">by <span>Vũ Nguyễn</span></p>
+    <p class="sub">Không lưu thông tin · Chỉ chạy trên RAM</p>
+  </div>
+
+  <div class="session-bar">
+    <span class="session-label">⏱ Phiên làm việc</span>
+    <div class="session-left">
+      <span class="session-timer" id="sessionTimer">3:00</span>
+      <button class="btn-renew" id="renewBtn" onclick="renewSession()">↺ Gia hạn</button>
+    </div>
+  </div>
+
+  <div class="label">Secret Key</div>
+  <div class="input-row">
+    <input type="password" id="sk" placeholder="Dán secret key vào đây..." autocomplete="off" spellcheck="false" oninput="onInput()" />
+    <button class="btn-eye" id="eyeBtn" onclick="toggleEye()" title="Hiện/ẩn key">
+      <svg id="eyeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+    </button>
+    <button class="btn-clear" onclick="clearAll()">Xóa</button>
+  </div>
+  <div class="err" id="err"></div>
+
+  <div class="result" id="result">
+    <div class="circle-wrap">
+      <svg width="120" height="120" viewBox="0 0 120 120">
+        <circle class="ring-bg" cx="60" cy="60" r="54"/>
+        <circle class="ring-fg" id="ringFg" cx="60" cy="60" r="54" stroke="#00d4ff" style="stroke-dashoffset:0"/>
+      </svg>
+      <div class="circle-inner">
+        <div class="circle-sec" id="circSec">30</div>
+        <div class="circle-lbl">giây</div>
+      </div>
+    </div>
+
+    <div class="code-label">Mã hiện tại</div>
+    <div class="code-row">
+      <div class="code" id="code">------</div>
+      <button class="copy-btn" id="copyBtn" onclick="doCopy()" title="Copy mã">
+        <svg id="copyIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b6b8a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2"/>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+      </button>
+    </div>
+    <div class="copied-msg" id="copiedMsg"></div>
+
+    <div class="btn-row">
+      <button class="btn-copy-full" onclick="doCopy()">Copy mã</button>
+      <button class="btn-clear-clip" id="clearClipBtn" onclick="clearClipboard()" title="Xóa clipboard">🧹 Xóa clipboard</button>
+    </div>
+
+    <div class="next-wrap">
+      <div class="next-left">
+        <div class="next-lbl">Mã tiếp theo</div>
+        <div class="next-code" id="nextCode">------</div>
+        <div class="next-info">có hiệu lực sau <span id="nextIn">30</span>s</div>
+      </div>
+      <button class="next-copy-btn" id="nextCopyBtn" onclick="doCopyNext()" title="Copy mã tiếp theo">
+        <svg id="nextCopyIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2"/>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+let totpIv=null,secret='',sessionSec=180,sessionIv=null;
+const CIRC=2*Math.PI*54;
+
+async function totp(s,offset=0){
+  try{
+    s=s.toUpperCase().replace(/\s|=/g,'');
+    const a='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    let bits=0,val=0;const kb=[];
+    for(let c of s){const i=a.indexOf(c);if(i<0)throw 0;val=(val<<5)|i;bits+=5;if(bits>=8){kb.push((val>>>(bits-8))&255);bits-=8;}}
+    const t=Math.floor(Date.now()/1000/30)+offset;
+    const buf=new ArrayBuffer(8);new DataView(buf).setUint32(4,t,false);
+    const k=await crypto.subtle.importKey('raw',new Uint8Array(kb),{name:'HMAC',hash:'SHA-1'},false,['sign']);
+    const sig=new Uint8Array(await crypto.subtle.sign('HMAC',k,buf));
+    const off=sig[19]&0xf;
+    const n=((sig[off]&0x7f)<<24|(sig[off+1]&0xff)<<16|(sig[off+2]&0xff)<<8|(sig[off+3]&0xff))%1000000;
+    return n.toString().padStart(6,'0');
+  }catch{return null;}
+}
+
+function startSession(){
+  clearInterval(sessionIv);sessionSec=180;updateSessionUI();
+  sessionIv=setInterval(()=>{sessionSec--;updateSessionUI();if(sessionSec<=0)expireSession();},1000);
+}
+function toggleEye(){
+  const inp=document.getElementById('sk');
+  const btn=document.getElementById('eyeBtn');
+  const icon=document.getElementById('eyeIcon');
+  const show=inp.type==='password';
+  inp.type=show?'text':'password';
+  btn.classList.toggle('active',show);
+  icon.setAttribute('stroke', show?'#ec4899':'#9ca3af');
+  icon.innerHTML=show
+    ?'<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>'
+    :'<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+}
+
+function renewSession(){
+  sessionSec=180;updateSessionUI();
+  const btn=document.getElementById('renewBtn');
+  btn.classList.add('flash');
+  setTimeout(()=>btn.classList.remove('flash'),800);
+}
+
+function resetSession(){sessionSec=180;updateSessionUI();}
+function updateSessionUI(){
+  const el=document.getElementById('sessionTimer');
+  const ss=sessionSec%60;
+  el.textContent=Math.floor(sessionSec/60)+':'+(ss<10?'0':'')+ss;
+  el.className='session-timer'+(sessionSec<=30?' crit':sessionSec<=60?' warn':'');
+}
+function expireSession(){
+  clearInterval(sessionIv);clearInterval(totpIv);
+  secret='';
+  document.getElementById('sk').value='';
+  document.getElementById('result').style.display='none';
+  document.getElementById('err').textContent='';
+  sessionSec=300;updateSessionUI();startSession();
+}
+
+function onInput(){
+  secret=document.getElementById('sk').value.trim();
+  document.getElementById('err').textContent='';
+  resetSession();
+  if(!secret){hide();return;}
+  clearInterval(totpIv);tick();totpIv=setInterval(tick,1000);
+}
+
+async function tick(){
+  const code=await totp(secret,0);
+  const next=await totp(secret,1);
+  if(!code){document.getElementById('err').textContent='Secret key không hợp lệ';hide();return;}
+  document.getElementById('err').textContent='';
+  document.getElementById('result').style.display='block';
+  const now=Math.floor(Date.now()/1000),rem=30-(now%30);
+  const ring=document.getElementById('ringFg');
+  ring.style.strokeDashoffset=CIRC*(1-rem/30);
+  const isLow=rem<=5;
+  ring.style.stroke=isLow?'#ff4d6d':'#00d4ff';
+  document.getElementById('circSec').textContent=rem;
+  document.getElementById('circSec').style.color=isLow?'#ff4d6d':'#00d4ff';
+  const codeEl=document.getElementById('code');
+  if(!codeEl.classList.contains('copied')){
+    codeEl.textContent=code;
+    codeEl.className='code'+(isLow?' low':'');
+  }
+  document.getElementById('nextCode').textContent=next||'------';
+  document.getElementById('nextIn').textContent=rem;
+}
+
+function hide(){clearInterval(totpIv);document.getElementById('result').style.display='none';}
+
+async function doCopy(){
+  const c=document.getElementById('code').textContent;
+  if(c==='------')return;
+  try{await navigator.clipboard.writeText(c);}catch{}
+  resetSession();
+  const m=document.getElementById('copiedMsg');
+  const btn=document.getElementById('copyBtn');
+  const icon=document.getElementById('copyIcon');
+  m.textContent='✓ Đã copy!';
+  document.getElementById('code').classList.add('copied');
+  btn.classList.add('done');
+  icon.setAttribute('stroke','#00e5a0');
+  icon.innerHTML='<polyline points="20 6 9 17 4 12"/>';
+  setTimeout(()=>{
+    m.textContent='';
+    document.getElementById('code').classList.remove('copied');
+    btn.classList.remove('done');
+    icon.setAttribute('stroke','#6b6b8a');
+    icon.innerHTML='<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>';
+  },1500);
+}
+
+async function doCopyNext(){
+  const c=document.getElementById('nextCode').textContent;
+  if(c==='------')return;
+  try{await navigator.clipboard.writeText(c);}catch{
+    try{
+      const ta=document.createElement('textarea');
+      ta.value=c;ta.style.cssText='position:fixed;top:0;left:0;opacity:0';
+      document.body.appendChild(ta);ta.focus();ta.select();
+      document.execCommand('copy');document.body.removeChild(ta);
+    }catch{}
+  }
+  resetSession();
+  const btn=document.getElementById('nextCopyBtn');
+  const icon=document.getElementById('nextCopyIcon');
+  btn.classList.add('done');
+  icon.setAttribute('stroke','#10b981');
+  icon.innerHTML='<polyline points="20 6 9 17 4 12"/>';
+  setTimeout(()=>{
+    btn.classList.remove('done');
+    icon.setAttribute('stroke','#9ca3af');
+    icon.innerHTML='<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>';
+  },1500);
+}
+
+async function clearClipboard(){
+  let ok=false;
+  // Method 1: Clipboard API (HTTPS / modern browser)
+  try{
+    await navigator.clipboard.writeText(' ');
+    ok=true;
+  }catch{}
+  // Method 2: execCommand fallback (file:// or older browser)
+  if(!ok){
+    try{
+      const ta=document.createElement('textarea');
+      ta.value=' ';
+      ta.style.cssText='position:fixed;top:0;left:0;opacity:0;pointer-events:none';
+      document.body.appendChild(ta);
+      ta.focus();ta.select();
+      ok=document.execCommand('copy');
+      document.body.removeChild(ta);
+    }catch{}
+  }
+  const btn=document.getElementById('clearClipBtn');
+  btn.textContent= ok ? '✓ Đã xóa!' : '⚠️ Không được phép';
+  btn.classList.add('done');
+  setTimeout(()=>{btn.textContent='🧹 Xóa clipboard';btn.classList.remove('done');},2000);
+}
+
+function clearAll(){
+  document.getElementById('sk').value='';
+  secret='';hide();
+  document.getElementById('err').textContent='';
+  resetSession();
+}
+
+document.addEventListener('keydown',resetSession);
+document.addEventListener('click',resetSession);
+startSession();
+</script>
+</body>
+</html>
